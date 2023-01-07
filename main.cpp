@@ -1,6 +1,10 @@
 #include <pcap.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include "dot11.h"
+#include <cstring>
+
+#define SUBTYPE 0x80
 
 void usage() {
 	printf("syntax: pcap-test <interface>\n");
@@ -25,6 +29,7 @@ bool parse(Param* param, int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+
 	if (!parse(&param, argc, argv))
 		return -1;
 
@@ -44,7 +49,22 @@ int main(int argc, char* argv[]) {
 			printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
 			break;
 		}
-		printf("%u bytes captured\n", header->caplen);
+		
+		RTHEAD *rd_hdr = (RTHEAD *)packet;
+		u_int16_t it_len = rd_hdr->it_len;
+		u_char* frame_start = (u_char*)(packet + it_len);
+		BEACON tmp;
+
+
+		if(*frame_start != SUBTYPE){
+			continue;
+		}
+		
+		memmove(tmp.bssid, frame_start + 10, 6);
+		memmove(tmp.essid, frame_start + 38, *(packet + it_len + 37));
+		if(strlen(tmp.essid) == 0) memmove(tmp.essid, "<length: 0>", 11);
+		printf("%02X:%02X:%02X:%02X:%02X:%02X // %s\n", tmp.bssid[0],tmp.bssid[1],tmp.bssid[2],tmp.bssid[3],tmp.bssid[4],tmp.bssid[5], tmp.essid);
+		memset(tmp.essid, 0, 256);
 	}
 
 	pcap_close(pcap);
