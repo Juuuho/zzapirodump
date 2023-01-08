@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include "dot11.h"
 #include <cstring>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
 
 #define SUBTYPE 0x80
 
@@ -28,7 +33,49 @@ bool parse(Param* param, int argc, char* argv[]) {
 	return true;
 }
 
+void printBCNS(vector<BEACON> &bcns){
+
+	for(int i=0;i<bcns.size();i++){
+		printf("%02X:%02X:%02X:%02X:%02X:%02X // %d // %s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].bc_cnt, bcns[i].essid);
+	}
+	printf("===========================================\n");
+}
+
+void ManageBcns(vector<BEACON> &bcns, u_char* frame_start){
+	u_int8_t BSSID[6]; int BC_CNT = 0; char ESSID[256];
+	
+	BEACON tmp;
+
+	memcpy(BSSID, frame_start + 10, 6);
+	memcpy(tmp.bssid, BSSID, sizeof(BSSID));
+	memcpy(ESSID, frame_start + 38, *(frame_start + 37));
+	memcpy(tmp.essid, ESSID, sizeof(ESSID));
+
+	if(strlen(tmp.essid) == 0) memcpy(tmp.essid, "<length: 0>", 11);
+
+	auto it = bcns.begin();
+	for(it;it != bcns.end();it++){
+		printf("%02X %s // %02X %s\n", it->bssid, it->essid, BSSID, ESSID);
+		if(memcmp(it->bssid, BSSID, sizeof(BSSID))){
+			tmp.bc_cnt += 1;
+		}
+		else{
+			tmp.bc_cnt = 0;
+		}
+	}
+
+
+	bcns.push_back(tmp);
+
+	printBCNS(bcns);
+
+	memset(BSSID, 0x00, sizeof(BSSID));
+	memset(ESSID, 0x00, sizeof(ESSID));
+}
+
+
 int main(int argc, char* argv[]) {
+	vector<BEACON> bcns;
 
 	if (!parse(&param, argc, argv))
 		return -1;
@@ -49,22 +96,18 @@ int main(int argc, char* argv[]) {
 			printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
 			break;
 		}
-		
+
 		RTHEAD *rd_hdr = (RTHEAD *)packet;
 		u_int16_t it_len = rd_hdr->it_len;
 		u_char* frame_start = (u_char*)(packet + it_len);
-		BEACON tmp;
 
 
 		if(*frame_start != SUBTYPE){
 			continue;
 		}
 		
-		memmove(tmp.bssid, frame_start + 10, 6);
-		memmove(tmp.essid, frame_start + 38, *(packet + it_len + 37));
-		if(strlen(tmp.essid) == 0) memmove(tmp.essid, "<length: 0>", 11);
-		printf("%02X:%02X:%02X:%02X:%02X:%02X // %s\n", tmp.bssid[0],tmp.bssid[1],tmp.bssid[2],tmp.bssid[3],tmp.bssid[4],tmp.bssid[5], tmp.essid);
-		memset(tmp.essid, 0, 256);
+		ManageBcns(bcns, frame_start);
+		
 	}
 
 	pcap_close(pcap);
