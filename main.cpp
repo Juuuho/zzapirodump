@@ -34,7 +34,7 @@ bool parse(Param* param, int argc, char* argv[]) {
 }
 
 void printBCNS(vector<BEACON> &bcns){
-
+    printf("\x1b[H\x1b[J");
 	for(int i=0;i<bcns.size();i++){
 		printf("%02X:%02X:%02X:%02X:%02X:%02X // %d // %s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].bc_cnt, bcns[i].essid);
 	}
@@ -43,7 +43,8 @@ void printBCNS(vector<BEACON> &bcns){
 
 void ManageBcns(vector<BEACON> &bcns, u_char* frame_start){
 	u_int8_t BSSID[6]; int BC_CNT = 0; char ESSID[256];
-	
+	bool is_new = true;
+
 	BEACON tmp;
 
 	memcpy(BSSID, frame_start + 10, 6);
@@ -53,19 +54,22 @@ void ManageBcns(vector<BEACON> &bcns, u_char* frame_start){
 
 	if(strlen(tmp.essid) == 0) memcpy(tmp.essid, "<length: 0>", 11);
 
+	tmp.bc_cnt = 1;
+
 	auto it = bcns.begin();
 	for(it;it != bcns.end();it++){
-		printf("%02X %s // %02X %s\n", it->bssid, it->essid, BSSID, ESSID);
-		if(memcmp(it->bssid, BSSID, sizeof(BSSID))){
-			tmp.bc_cnt += 1;
-		}
-		else{
-			tmp.bc_cnt = 0;
+		//printf("%02X %s // %02X %s\n", it->bssid, it->essid, BSSID, ESSID);
+		if(!memcmp(it->bssid, BSSID, 6)){
+			//tmp.bc_cnt += 1;
+			it->bc_cnt += 1;
+			is_new = false;
 		}
 	}
 
-
-	bcns.push_back(tmp);
+	if(is_new){
+		printf("sdfsdadf");
+		bcns.push_back(tmp);
+	}
 
 	printBCNS(bcns);
 
@@ -100,7 +104,6 @@ int main(int argc, char* argv[]) {
 		RTHEAD *rd_hdr = (RTHEAD *)packet;
 		u_int16_t it_len = rd_hdr->it_len;
 		u_char* frame_start = (u_char*)(packet + it_len);
-
 
 		if(*frame_start != SUBTYPE){
 			continue;
