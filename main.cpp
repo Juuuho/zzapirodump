@@ -35,46 +35,66 @@ bool parse(Param* param, int argc, char* argv[]) {
 
 void printBCNS(vector<BEACON> &bcns){
     printf("\x1b[H\x1b[J");
+	printf("BSSID\t\t\tPWR\tBeacons\tESSID\n");
 	for(int i=0;i<bcns.size();i++){
-		printf("%02X:%02X:%02X:%02X:%02X:%02X // %d // %s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].bc_cnt, bcns[i].essid);
+		printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t%d\t%s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].pwr[0],bcns[i].bc_cnt, bcns[i].essid);
 	}
-	printf("===========================================\n");
 }
 
-void ManageBcns(vector<BEACON> &bcns, u_char* frame_start){
-	u_int8_t BSSID[6]; int BC_CNT = 0; char ESSID[256];
+void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
+	u_int8_t BSSID[6]; int BC_CNT = 1; char ESSID[256]; int8_t PWR[1];
 	bool is_new = true;
 
 	BEACON tmp;
 
-	memcpy(BSSID, frame_start + 10, 6);
+	memcpy(BSSID, frame_start + 10, sizeof(BSSID));
 	memcpy(tmp.bssid, BSSID, sizeof(BSSID));
+
+	memcpy(PWR, frame_start - it_len + 22, sizeof(PWR));
+	memcpy(tmp.pwr, PWR, sizeof(PWR));
+	
 	memcpy(ESSID, frame_start + 38, *(frame_start + 37));
 	memcpy(tmp.essid, ESSID, sizeof(ESSID));
-
+	
 	if(strlen(tmp.essid) == 0) memcpy(tmp.essid, "<length: 0>", 11);
 
-	tmp.bc_cnt = 1;
+	//printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t%s\n", tmp.bssid[0], tmp.bssid[1],tmp.bssid[2],tmp.bssid[3],tmp.bssid[4], tmp.bssid[5],tmp.pwr[0],tmp.essid);
+	/*
+	for(int i=0;i<bcns.size();i++){
+		if(!memcmp(bcns[i].bssid, BSSID, 6)){
+			bcns[i].bc_cnt += 1;
+			if(tmp.pwr[0] != -1){
+				bcns[i].pwr[0] = tmp.pwr[0];
+			}
+			is_new = false;
+			break;
+		}
+	}
+*/
+
 
 	auto it = bcns.begin();
-	for(it;it != bcns.end();it++){
-		//printf("%02X %s // %02X %s\n", it->bssid, it->essid, BSSID, ESSID);
-		if(!memcmp(it->bssid, BSSID, 6)){
-			//tmp.bc_cnt += 1;
-			it->bc_cnt += 1;
+	for(auto& it: bcns){
+		if(!memcmp(it.bssid, BSSID, 6)){
+			it.bc_cnt += 1;
+			if(tmp.pwr[0] != -1){
+				it.pwr[0] = tmp.pwr[0];
+			}
 			is_new = false;
+			break;
 		}
 	}
 
+
 	if(is_new){
-		printf("sdfsdadf");
 		bcns.push_back(tmp);
 	}
 
 	printBCNS(bcns);
-
 	memset(BSSID, 0x00, sizeof(BSSID));
+	memset(PWR, 0x00, sizeof(PWR));
 	memset(ESSID, 0x00, sizeof(ESSID));
+	
 }
 
 
@@ -109,8 +129,8 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 		
-		ManageBcns(bcns, frame_start);
-		
+		ManageBcns(bcns, frame_start, it_len);
+
 	}
 
 	pcap_close(pcap);

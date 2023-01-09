@@ -9,6 +9,7 @@ typedef struct radiotap_header {
 
 typedef struct beacon {
         u_int8_t        bssid[6];
+        int8_t          pwr[1];
         int             bc_cnt;
         char            essid[256];
 }BEACON;
