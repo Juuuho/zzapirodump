@@ -42,9 +42,9 @@ bool parse(Param* param, int argc, char* argv[]) {
 void printBCNS(vector<BEACON> &bcns){
     printf("\x1b[H\x1b[J");
 	printf("CH  %d ]\n", ch_Num);
-	printf("BSSID\t\t\tPWR\t\tBeacons\t\tENC\tESSID\n\n");
+	printf("BSSID\t\t\tPWR\tBeacons\tESSID\n\n");
 	for(int i=0;i<bcns.size();i++){
-		printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t\t%d\t\tABC\t%s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].pwr[0],bcns[i].bc_cnt, bcns[i].essid);
+		printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t%d\t%s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].pwr[0],bcns[i].bc_cnt, bcns[i].essid);
 	}
 }
 
