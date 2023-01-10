@@ -1,8 +1,8 @@
 LDLIBS += -lpcap
 
-all: main
+all: zzapirodump
 
-pcap-test: main.cpp
+pcap-test: zzapirodump.cpp
 
 clean:
-	rm -f main *.o
+	rm -f zzapirodump *.o

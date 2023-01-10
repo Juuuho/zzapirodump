@@ -16,8 +16,8 @@ time_t timer_1 = time(NULL);
 int ch_Num = 0;
 
 void usage() {
-	printf("syntax: pcap-test <interface>\n");
-	printf("sample: pcap-test wlan0\n");
+	printf("syntax: zzapirodump <interface>\n");
+	printf("sample: zzapirodump wlan0\n");
 }
 
 typedef struct {
@@ -65,21 +65,6 @@ void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
 	memcpy(tmp.essid, ESSID, sizeof(ESSID));
 	
 	if(strlen(tmp.essid) == 0) memcpy(tmp.essid, "<length: 0>", 11);
-
-	//printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t%s\n", tmp.bssid[0], tmp.bssid[1],tmp.bssid[2],tmp.bssid[3],tmp.bssid[4], tmp.bssid[5],tmp.pwr[0],tmp.essid);
-	/*
-	for(int i=0;i<bcns.size();i++){
-		if(!memcmp(bcns[i].bssid, BSSID, 6)){
-			bcns[i].bc_cnt += 1;
-			if(tmp.pwr[0] != -1){
-				bcns[i].pwr[0] = tmp.pwr[0];
-			}
-			is_new = false;
-			break;
-		}
-	}
-*/
-
 
 	auto it = bcns.begin();
 	for(auto& it: bcns){
