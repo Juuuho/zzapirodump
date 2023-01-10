@@ -6,10 +6,14 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <ctime>
 
 using namespace std;
 
 #define SUBTYPE 0x80
+
+time_t timer_1 = time(NULL);
+int ch_Num = 0;
 
 void usage() {
 	printf("syntax: pcap-test <interface>\n");
@@ -24,6 +28,8 @@ Param param = {
 	.dev_ = NULL
 };
 
+
+
 bool parse(Param* param, int argc, char* argv[]) {
 	if (argc != 2) {
 		usage();
@@ -35,14 +41,15 @@ bool parse(Param* param, int argc, char* argv[]) {
 
 void printBCNS(vector<BEACON> &bcns){
     printf("\x1b[H\x1b[J");
-	printf("BSSID\t\t\tPWR\tBeacons\tESSID\n");
+	printf("CH  %d ]\n", ch_Num);
+	printf("BSSID\t\t\tPWR\t\tBeacons\t\tENC\tESSID\n\n");
 	for(int i=0;i<bcns.size();i++){
-		printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t%d\t%s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].pwr[0],bcns[i].bc_cnt, bcns[i].essid);
+		printf("%02X:%02X:%02X:%02X:%02X:%02X\t%d\t\t%d\t\tABC\t%s\n", bcns[i].bssid[0],bcns[i].bssid[1],bcns[i].bssid[2],bcns[i].bssid[3],bcns[i].bssid[4],bcns[i].bssid[5], bcns[i].pwr[0],bcns[i].bc_cnt, bcns[i].essid);
 	}
 }
 
 void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
-	u_int8_t BSSID[6]; int BC_CNT = 1; char ESSID[256]; int8_t PWR[1];
+	u_int8_t BSSID[6]; char ESSID[256]; int8_t PWR[1];
 	bool is_new = true;
 
 	BEACON tmp;
@@ -87,6 +94,7 @@ void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
 
 
 	if(is_new){
+		tmp.bc_cnt = 1;
 		bcns.push_back(tmp);
 	}
 
@@ -100,6 +108,8 @@ void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
 
 int main(int argc, char* argv[]) {
 	vector<BEACON> bcns;
+	int channels[] = {1, 3, 14, 13, 4, 2, 5, 9, 10, 8, 7, 12, 11, 6};
+	int chn = 0;
 
 	if (!parse(&param, argc, argv))
 		return -1;
@@ -112,9 +122,24 @@ int main(int argc, char* argv[]) {
 	}
 
 	while (true) {
+		time_t timer_2 = time(NULL);
+
 		struct pcap_pkthdr* header;
 		const u_char* packet;
 		int res = pcap_next_ex(pcap, &header, &packet);
+
+		if(timer_2 - timer_1 >= 0.1){
+			string cmd = "iwconfig ";
+			cmd += argv[1];
+			cmd += " channel ";
+			cmd += channels[chn];
+			chn = (chn+1)%(sizeof(channels)/sizeof(int));
+
+			timer_1 = time(NULL);
+			system(cmd.c_str());
+			ch_Num = channels[chn];
+		}
+
 		if (res == 0) continue;
 		if (res == PCAP_ERROR || res == PCAP_ERROR_BREAK) {
 			printf("pcap_next_ex return %d(%s)\n", res, pcap_geterr(pcap));
