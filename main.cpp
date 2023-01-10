@@ -48,6 +48,7 @@ void printBCNS(vector<BEACON> &bcns){
 	}
 }
 
+
 void ManageBcns(vector<BEACON> &bcns, u_char* frame_start, u_int16_t it_len){
 	u_int8_t BSSID[6]; char ESSID[256]; int8_t PWR[1];
 	bool is_new = true;
